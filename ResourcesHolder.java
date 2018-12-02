@@ -1,5 +1,7 @@
 package bgu.spl.mics.application.passiveObjects;
 
+import java.util.LinkedList;
+
 import bgu.spl.mics.Future;
 
 /**
@@ -13,12 +15,18 @@ import bgu.spl.mics.Future;
  */
 public class ResourcesHolder {
 	
+	private static ResourcesHolder instance=null;
+	private LinkedList<DeliveryVehicle> freeVehicles=new LinkedList<>();
+	private LinkedList<DeliveryVehicle> occupiedVehicles=new LinkedList<>();
+	 
 	/**
      * Retrieves the single instance of this class.
      */
 	public static ResourcesHolder getInstance() {
-		//TODO: Implement this
-		return null;
+		if(instance==null) {
+			return new ResourcesHolder();
+		}
+		return instance;
 	}
 	
 	/**
@@ -28,9 +36,17 @@ public class ResourcesHolder {
      * @return 	{@link Future<DeliveryVehicle>} object which will resolve to a 
      * 			{@link DeliveryVehicle} when completed.   
      */
-	public Future<DeliveryVehicle> acquireVehicle() {
-		//TODO: Implement this
-		return null;
+	public synchronized Future<DeliveryVehicle> acquireVehicle() {
+		while(freeVehicles.isEmpty()) {
+			try {
+				this.wait();
+			} catch (InterruptedException e) {}
+		}
+		DeliveryVehicle v=this.freeVehicles.remove();
+		this.occupiedVehicles.add(v);
+		Future<DeliveryVehicle> future=new Future<>();
+		future.resolve(v);
+		return future;
 	}
 	
 	/**
@@ -39,8 +55,10 @@ public class ResourcesHolder {
      * <p>
      * @param vehicle	{@link DeliveryVehicle} to be released.
      */
-	public void releaseVehicle(DeliveryVehicle vehicle) {
-		//TODO: Implement this
+	public synchronized void releaseVehicle(DeliveryVehicle vehicle) {
+		this.occupiedVehicles.remove(vehicle);
+		this.freeVehicles.add(vehicle);
+		this.notifyAll();
 	}
 	
 	/**
@@ -49,7 +67,11 @@ public class ResourcesHolder {
      * @param vehicles	Array of {@link DeliveryVehicle} instances to store.
      */
 	public void load(DeliveryVehicle[] vehicles) {
-		//TODO: Implement this
+		if(vehicles!=null) {
+			for(DeliveryVehicle v: vehicles) {
+				this.freeVehicles.add(v);
+			}
+		}
 	}
 
 }
