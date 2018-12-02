@@ -12,8 +12,17 @@ public class OrderReceipt {
 	/**
      * Retrieves the orderId of this receipt.
      */
+	private int orderId;
+	private String Seller;
+	private int customerId;
+	private String bookTitle;
+	private int price;
+	private int issuedTick;
+	private int orderTick;
+	private int processTick;
 	public int getOrderId() {
 		// TODO Implement this
+		return this.orderId;
 		return 0;
 	}
 	
@@ -22,6 +31,7 @@ public class OrderReceipt {
      */
 	public String getSeller() {
 		// TODO Implement this
+		return this.Seller
 		return null;
 	}
 	
@@ -32,6 +42,7 @@ public class OrderReceipt {
      */
 	public int getCustomerId() {
 		// TODO Implement this
+		return this.customer
 		return 0;
 	}
 	
@@ -40,6 +51,7 @@ public class OrderReceipt {
      */
 	public String getBookTitle() {
 		// TODO Implement this
+		return this.bookTitle;
 		return null;
 	}
 	
@@ -48,6 +60,7 @@ public class OrderReceipt {
      */
 	public int getPrice() {
 		// TODO Implement this
+		return this.price;
 		return 0;
 	}
 	
@@ -56,6 +69,7 @@ public class OrderReceipt {
      */
 	public int getIssuedTick() {
 		// TODO Implement this
+		return this.issuedTick;
 		return 0;
 	}
 	
@@ -64,6 +78,7 @@ public class OrderReceipt {
      */
 	public int getOrderTick() {
 		// TODO Implement this
+		return this.orderTick;
 		return 0;
 	}
 	
@@ -73,6 +88,7 @@ public class OrderReceipt {
      */
 	public int getProcessTick() {
 		// TODO Implement this
+		return this.processTick;
 		return 0;
 	}
 }
