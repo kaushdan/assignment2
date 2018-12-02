@@ -48,7 +48,11 @@ public class FutureTest<T> {
 
 	@Test
 	public void testGetLongTimeUnit() {
-		fail("Not yet implemented");
+		assertEquals(false,this.futureTest.isDone());
+		this.futureTest.resolve("ok!");
+		assertEquals(true,this.futureTest.isDone());
+		String result=this.futureTest.get();
+		assertEquals(result, "ok!");
 	}
 
 }
