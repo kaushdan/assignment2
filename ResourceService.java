@@ -1,7 +1,12 @@
 package bgu.spl.mics.application.services;
 
+import bgu.spl.mics.Future;
 import bgu.spl.mics.MicroService;
-
+import bgu.spl.mics.application.messages.AcquireVehicle;
+import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.passiveObjects.ResourcesHolder;
+import bgu.spl.mics.application.passiveObjects.DeliveryVehicle;
+ 
 /**
  * ResourceService is in charge of the store resources - the delivery vehicles.
  * Holds a reference to the {@link ResourceHolder} singleton of the store.
@@ -12,15 +17,30 @@ import bgu.spl.mics.MicroService;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class ResourceService extends MicroService{
-
-	public ResourceService() {
-		super("Change_This_Name");
-		// TODO Implement this
+	
+	private ResourcesHolder garage;
+	public ResourceService(String name) {
+		super(name);
+		garage=ResourcesHolder.getInstance();
 	}
 
 	@Override
 	protected void initialize() {
-		// TODO Implement this
+		subscribeBroadcast(TickBroadcast.class, message->{
+			if(message.Stop()) {
+				terminate();
+			}
+		});
+		
+		subscribeEvent(AcquireVehicle.class, message->{
+			Future<DeliveryVehicle> future=garage.acquireVehicle();
+			if(future!=null) {
+				DeliveryVehicle v=future.get();
+				v.deliver(message.getAddress(),message.getDistance());
+				garage.releaseVehicle(v);
+				complete(message,v);
+			}
+		});
 		
 	}
 
