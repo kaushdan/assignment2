@@ -27,6 +27,9 @@ public class MoneyRegister {
           return instance;
 	}
 	
+	public MoneyRegister(List<OrderReceipt> orders){
+		this.orders=orders;	
+	}
 	/**
      * Saves an order receipt in the money register.
      * <p>   
