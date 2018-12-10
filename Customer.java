@@ -13,8 +13,16 @@ public class Customer {
 	/**
      * Retrieves the name of the customer.
      */
+	private int id;
+	private String name;
+	private String address;
+	private int distance;
+	private List<OrderReceipt> Receipts;
+	private int creditCard;
+	private int availableAmountInCreditCard;
 	public String getName() {
 		// TODO Implement this
+		return this.name;
 		return null;
 	}
 
@@ -23,6 +31,7 @@ public class Customer {
      */
 	public int getId() {
 		// TODO Implement this
+		return this.id
 		return 0;
 	}
 	
@@ -31,6 +40,7 @@ public class Customer {
      */
 	public String getAddress() {
 		// TODO Implement this
+		return this.adress;
 		return null;
 	}
 	
@@ -39,6 +49,7 @@ public class Customer {
      */
 	public int getDistance() {
 		// TODO Implement this
+		return this.distance;
 		return 0;
 	}
 
@@ -50,6 +61,7 @@ public class Customer {
      */
 	public List<OrderReceipt> getCustomerReceiptList() {
 		// TODO Implement this
+		return this.Receipts;
 		return null;
 	}
 	
@@ -60,6 +72,7 @@ public class Customer {
      */
 	public int getAvailableCreditAmount() {
 		// TODO Implement this
+		return this.availableAmountInCreditCard
 		return 0;
 	}
 	
@@ -68,7 +81,14 @@ public class Customer {
      */
 	public int getCreditNumber() {
 		// TODO Implement this
+		return this.credit card
 		return 0;
 	}
 	
+	/***
+	* Set the Amount in credit card	
+	*/
+	public void setAmountInCreditCard(int amount){
+		this.availableAmountinCreditCard=amount;
+	}
 }
