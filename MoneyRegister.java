@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.passiveObjects;
-
+import java.util.List;
+import java.util.Iterator;
 
 
 /**
@@ -13,12 +14,17 @@ package bgu.spl.mics.application.passiveObjects;
  */
 public class MoneyRegister {
 	
+	private List<OrderReceipt> orders;
+	private static MoneyRegister instance=null;
 	/**
      * Retrieves the single instance of this class.
      */
 	public static MoneyRegister getInstance() {
 		//TODO: Implement this
-		return null;
+		if(instance == null) {
+             instance = new MoneyRegister();
+          }
+          return instance;
 	}
 	
 	/**
@@ -28,6 +34,7 @@ public class MoneyRegister {
      */
 	public void file (OrderReceipt r) {
 		//TODO: Implement this.
+		orders.add(r);
 	}
 	
 	/**
@@ -35,6 +42,11 @@ public class MoneyRegister {
      */
 	public int getTotalEarnings() {
 		//TODO: Implement this
+		int earnings=0;
+		Iterator myIter=r.iterator();
+		while(myIter.hasNext())
+			earnings+=myIter.next().getPrice();
+		return earnings;
 		return 0;
 	}
 	
@@ -45,6 +57,7 @@ public class MoneyRegister {
      */
 	public void chargeCreditCard(Customer c, int amount) {
 		// TODO Implement this
+		c.setCreditAmount(c.getAvailableCreditAmount()-amount);
 	}
 	
 	/**
