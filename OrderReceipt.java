@@ -26,6 +26,17 @@ public class OrderReceipt {
 		return 0;
 	}
 	
+	public OrderReceipt(int orderId,String Seller,int customerId,String bookTitle,int price,int issuedTick,int orderTick,int processTick){
+		this.orderId=orderId;
+		this.Seller=Seller;
+		this customerId=customerId;
+		this.bookTitle=BookTitle;
+		this.price=price;
+		this.issuedTick=issuedTick;
+		this.orderTick=orderTick;
+		this.processTick=processTick;
+	}
+	
 	/**
      * Retrieves the name of the selling service which handled the order.
      */
