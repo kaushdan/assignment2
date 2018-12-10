@@ -10,9 +10,6 @@ import java.util.List;
  */
 public class Customer {
 
-	/**
-     * Retrieves the name of the customer.
-     */
 	private int id;
 	private String name;
 	private String address;
@@ -20,6 +17,20 @@ public class Customer {
 	private List<OrderReceipt> Receipts;
 	private int creditCard;
 	private int availableAmountInCreditCard;
+		
+	public Customer(int id,String name,String address,int distance,List<OrderReceipts> Receipts,int creditCard,int int availableAmountInCreditCard){
+		this.id=id;
+		this.name=name;
+		this.addres=address;
+		this.distance=distance;
+		this.Receipts=Receipts;
+		this.creditCard=creditCard;
+		this.availableAmountInCreditCard=availableAmountInCreditCard;
+	}
+	
+		/**
+     * Retrieves the name of the customer.
+     */
 	public String getName() {
 		// TODO Implement this
 		return this.name;
