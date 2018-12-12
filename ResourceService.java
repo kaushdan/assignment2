@@ -1,9 +1,12 @@
 package bgu.spl.mics.application.services;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import bgu.spl.mics.Future;
 import bgu.spl.mics.MicroService;
-import bgu.spl.mics.application.messages.AcquireVehicle;
-import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.messages.AcquireVehicleEvent;
+import bgu.spl.mics.application.messages.ReleseVehicleEvent;
+import bgu.spl.mics.application.messages.TerminateBroadcast;
 import bgu.spl.mics.application.passiveObjects.ResourcesHolder;
 import bgu.spl.mics.application.passiveObjects.DeliveryVehicle;
  
@@ -19,29 +22,33 @@ import bgu.spl.mics.application.passiveObjects.DeliveryVehicle;
 public class ResourceService extends MicroService{
 	
 	private ResourcesHolder garage;
-	public ResourceService(String name) {
+	private AtomicInteger count;
+	
+	public ResourceService(String name, AtomicInteger count) {
 		super(name);
 		garage=ResourcesHolder.getInstance();
+		this.count=count;
 	}
 
 	@Override
 	protected void initialize() {
-		subscribeBroadcast(TickBroadcast.class, message->{
-			if(message.Stop()) {
-				terminate();
-			}
+		subscribeBroadcast(TerminateBroadcast.class, message->{
+			terminate();
 		});
 		
-		subscribeEvent(AcquireVehicle.class, message->{
+		subscribeEvent(AcquireVehicleEvent.class, message->{
 			Future<DeliveryVehicle> future=garage.acquireVehicle();
 			if(future!=null) {
-				DeliveryVehicle v=future.get();
-				v.deliver(message.getAddress(),message.getDistance());
-				garage.releaseVehicle(v);
-				complete(message,v);
+				DeliveryVehicle vehicle=future.get();
+				complete(message,vehicle);
 			}
 		});
 		
+		subscribeEvent(ReleseVehicleEvent.class, message->{
+			garage.releaseVehicle(message.getDeliveryVehicle());
+		});
+		
+		this.count.addAndGet(1);
 	}
 
 }
