@@ -1,9 +1,14 @@
 package bgu.spl.mics.application.services;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import bgu.spl.mics.Future;
 import bgu.spl.mics.MicroService;
-import bgu.spl.mics.application.messages.AcquireVehicle;
+import bgu.spl.mics.application.messages.AcquireVehicleEvent;
 import bgu.spl.mics.application.messages.DeliveryEvent;
-import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.messages.ReleseVehicleEvent;
+import bgu.spl.mics.application.messages.TerminateBroadcast;
+import bgu.spl.mics.application.passiveObjects.DeliveryVehicle;
 
 /**
  * Logistic service in charge of delivering books that have been purchased to customers.
@@ -15,23 +20,30 @@ import bgu.spl.mics.application.messages.TickBroadcast;
  * You MAY change constructor signatures and even add new public constructors.
  */
 public class LogisticsService extends MicroService {
-
-	public LogisticsService(String name) {
+	
+	private AtomicInteger count;
+	
+	public LogisticsService(String name, AtomicInteger count) {
 		super(name);
-		// TODO Implement this
+		this.count=count;
 	}
 
 	@Override
 	protected void initialize() {
-		subscribeBroadcast(TickBroadcast.class, message->{
-			if(message.Stop()) {
-				terminate();
-			}
+		subscribeBroadcast(TerminateBroadcast.class, message->{
+			terminate();
 		});
 		
 		subscribeEvent(DeliveryEvent.class, message->{
-			sendEvent(new AcquireVehicle(message.getDistance(),message.getAddress()));
+			Future<DeliveryVehicle> future=sendEvent(new AcquireVehicleEvent());
+			if(future!=null) {
+				DeliveryVehicle v=future.get();
+				v.deliver(message.getAddress(), message.getDistance());
+				sendEvent(new ReleseVehicleEvent(v));
+			}
 		});
+		
+		this.count.addAndGet(1);
 	}
 
 }
