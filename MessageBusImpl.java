@@ -32,18 +32,17 @@ public class MessageBusImpl implements MessageBus {
 	 * to determine it's value
 	 */
 	private HashMap<Event<?>,Future<?>> eventsFuture;
-//	private Object lockE;
-//	private Object lockB;
-//	private Object lockR;
-//	private Object lockUR;
+	private Object lockE;
+	private Object lockB;
+	//private Object lockR;
+	//private Object lockUR; 
 	
-	private static MessageBus instance=null;
+	private static class SingletonHolder {
+        private static MessageBus instance = new MessageBusImpl();
+    }
 	
 	public static MessageBus getInstance() {
-		if(instance == null) {
-            instance = new MessageBusImpl();
-         }
-         return instance;
+		return SingletonHolder.instance;
 	}
 	
 	private MessageBusImpl() {
@@ -51,42 +50,45 @@ public class MessageBusImpl implements MessageBus {
 		this.eventsToServices=new HashMap<>();
 		this.microServicesQueues=new HashMap<>();
 		this.eventsFuture=new HashMap<>();
-//		this.lockB=new Object();
-//		this.lockE=new Object();
-//		this.lockR=new Object();
-//		this.lockUR=new Object();
+		this.lockB=new Object();
+		this.lockE=new Object();
+		//this.lockR=new Object();
+		//this.lockUR=new Object();
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		//synchronized (this.lockE) {
+		
 			if(this.eventsToServices.containsKey(type)) {
 				this.eventsToServices.get(type).add(m);
 				((LinkedList<Class<? extends Event<T>>>)this.microServicesQueues.get(m)[1]).add(type);
 			}
 			else {
-				this.eventsToServices.put(type,new LinkedList<MicroService>());
-				this.eventsToServices.get(type).add(m);
-				((LinkedList<Class<? extends Event<T>>>)this.microServicesQueues.get(m)[1]).add(type);
-			}
-		//}
+				synchronized (this.lockE) {
+					if(!this.eventsToServices.containsKey(type))
+						this.eventsToServices.put(type,new LinkedList<MicroService>());
+					this.eventsToServices.get(type).add(m);
+					((LinkedList<Class<? extends Event<T>>>)this.microServicesQueues.get(m)[1]).add(type);
+				}
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		//synchronized (this.lockB) {
 			if(this.brodcastToServices.containsKey(type)) {
 				this.brodcastToServices.get(type).add(m);
 				((LinkedList<Class<? extends Broadcast>>)this.microServicesQueues.get(m)[2]).add(type);
 			}
 			else {
-				this.brodcastToServices.put(type, new LinkedList<MicroService>());
-				this.brodcastToServices.get(type).add(m);
-				((LinkedList<Class<? extends Broadcast>>)this.microServicesQueues.get(m)[2]).add(type);
+				synchronized (this.lockB) {
+					if(!this.brodcastToServices.containsKey(type))
+						this.brodcastToServices.put(type, new LinkedList<MicroService>());
+					this.brodcastToServices.get(type).add(m);
+					((LinkedList<Class<? extends Broadcast>>)this.microServicesQueues.get(m)[2]).add(type);
 			}
-		//}
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -161,8 +163,14 @@ public class MessageBusImpl implements MessageBus {
 	public void unregister(MicroService m) {
 		//synchronized (lockUR) {
 			Object[] array=this.microServicesQueues.get(m);
+			Queue<Message> microServicMessages=(Queue<Message>) array[0];
 			LinkedList<Class<? extends Event<?>>> eventsTypeList=(LinkedList<Class<? extends Event<?>>>)array[1]; 
 			LinkedList<Class<? extends Broadcast>> broadcastsTypeList=(LinkedList<Class<? extends Broadcast>>)array[2];
+			for(Message message: microServicMessages) {
+				if(message instanceof Event<?>) {
+					this.eventsFuture.get(message).resolve(null);
+				}
+			}
 			for(Class<? extends Event<?>> type: eventsTypeList) {
 				removeEvent(type,m);
 			}
