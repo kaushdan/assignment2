@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.passiveObjects;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -9,59 +10,56 @@ import java.util.List;
  * You may add fields and methods to this class as you see fit (including public methods).
  */
 public class Customer {
-
+	
 	private int id;
 	private String name;
 	private String address;
 	private int distance;
-	private List<OrderReceipt> Receipts;
-	private int creditCard;
-	private int availableAmountInCreditCard;
-		
-	public Customer(int id,String name,String address,int distance,List<OrderReceipts> Receipts,int creditCard,int int availableAmountInCreditCard){
-		this.id=id;
-		this.name=name;
-		this.addres=address;
-		this.distance=distance;
-		this.Receipts=Receipts;
-		this.creditCard=creditCard;
-		this.availableAmountInCreditCard=availableAmountInCreditCard;
+	private CreditCard creditCard;
+	private Order[] orderSchedule;
+	private List<OrderReceipt> Receipts;;
+	
+	
+	private class CreditCard{
+		private int number;
+		private int amount;
 	}
 	
-		/**
+	public Customer(int id,String name,String address,int distance,CreditCard creditCard,Order[] orderSchedule){
+		this.id=id;
+		this.name=name;
+		this.address=address;
+		this.distance=distance;
+		this.creditCard=creditCard;
+		this.orderSchedule=orderSchedule;
+		this.Receipts=new LinkedList<>();
+}
+	/**
      * Retrieves the name of the customer.
      */
 	public String getName() {
-		// TODO Implement this
 		return this.name;
-		return null;
 	}
 
 	/**
      * Retrieves the ID of the customer  . 
      */
 	public int getId() {
-		// TODO Implement this
-		return this.id
-		return 0;
+		return this.id;
 	}
 	
 	/**
      * Retrieves the address of the customer.  
      */
 	public String getAddress() {
-		// TODO Implement this
-		return this.adress;
-		return null;
+		return this.address;
 	}
 	
 	/**
      * Retrieves the distance of the customer from the store.  
      */
 	public int getDistance() {
-		// TODO Implement this
 		return this.distance;
-		return 0;
 	}
 
 	
@@ -71,9 +69,7 @@ public class Customer {
      * @return A list of receipts.
      */
 	public List<OrderReceipt> getCustomerReceiptList() {
-		// TODO Implement this
 		return this.Receipts;
-		return null;
 	}
 	
 	/**
@@ -82,24 +78,28 @@ public class Customer {
      * @return Amount of money left.   
      */
 	public int getAvailableCreditAmount() {
-		// TODO Implement this
-		return this.availableAmountInCreditCard
-		return 0;
+		return this.creditCard.amount;
 	}
 	
 	/**
      * Retrieves this customers credit card serial number.    
      */
 	public int getCreditNumber() {
-		// TODO Implement this
-		return this.credit card
-		return 0;
+		return this.creditCard.number;
 	}
 	
-	/***
-	* Set the Amount in credit card	
-	*/
-	public void setAmountInCreditCard(int amount){
-		this.availableAmountinCreditCard=amount;
+	public synchronized void addReceipt(OrderReceipt r){
+		if(this.Receipts==null)
+			this.Receipts=new LinkedList<>();
+		this.Receipts.add(r);
 	}
+	
+	public Order[] getOrderSchedule() {
+		return this.orderSchedule;
+	}
+	
+	public synchronized void setCreditAmount(int amount) {
+		this.creditCard.amount=amount;
+	}
+	
 }
