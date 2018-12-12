@@ -1,10 +1,10 @@
 package bgu.spl.mics.application.passiveObjects;
 
-import java.io.FileOutputStream;
+import java.io.FileOutputStream; 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
-import java.util.Vector;
+import java.util.LinkedList;
 
 /**
  * Passive data-object representing the store inventory.
@@ -18,16 +18,21 @@ import java.util.Vector;
  */
 public class Inventory {
 
-	private static Inventory instance=null;
-	private Vector<BookInventoryInfo> list=new Vector<>();
+	private LinkedList<BookInventoryInfo> list;
 	/**
      * Retrieves the single instance of this class.
      */
 	public static Inventory getInstance() {
-		 if(instance == null) {
-             instance = new Inventory();
-          }
-          return instance;
+		 return SingletonHolder.instance;
+	}
+	
+	private static class SingletonHolder {
+        private static Inventory instance = new Inventory();
+    }
+	
+	private Inventory()
+	{
+		this.list=new LinkedList<>();
 	}
 	
 	/**
@@ -56,9 +61,11 @@ public class Inventory {
 	public OrderResult take (String book) {
 		for(BookInventoryInfo myBook: list) {
 			if(myBook.getBookTitle().equals(book)) {
-				if(myBook.getAmountInInventory()>0) {
-					myBook.decrement();
-					return OrderResult.SUCCESSFULLY_TAKEN;
+				synchronized (myBook) {
+					if(myBook.getAmountInInventory()>0) {
+						myBook.decrement();
+						return OrderResult.SUCCESSFULLY_TAKEN;
+					}
 				}
 			}
 		}
@@ -66,7 +73,7 @@ public class Inventory {
 	}
 	
 	
-	
+	 
 	/**
      * Checks if a certain book is available in the inventory.
      * <p>
@@ -76,7 +83,10 @@ public class Inventory {
 	public int checkAvailabiltyAndGetPrice(String book) {
 		for(BookInventoryInfo myBook: list) {
 			if(myBook.getBookTitle().equals(book))
-				return myBook.getPrice();
+				synchronized (myBook) {
+					if(myBook.getAmountInInventory()>0)
+						return myBook.getPrice();
+				} 
 		}
 		return -1;
 	}
@@ -101,9 +111,7 @@ public class Inventory {
                oos.writeObject(map);
                oos.close();
                fos.close();
-        }catch(IOException ioe)
-         {
-         }
+        }catch(IOException ioe){}
 	}
 	
 }
