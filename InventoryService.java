@@ -1,6 +1,13 @@
 package bgu.spl.mics.application.services;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.CheckAvailabiltyEvent;
+import bgu.spl.mics.application.messages.TakeBookEvent;
+import bgu.spl.mics.application.messages.TerminateBroadcast;
+import bgu.spl.mics.application.passiveObjects.Inventory;
+import bgu.spl.mics.application.passiveObjects.OrderResult;
 
 /**
  * InventoryService is in charge of the book inventory and stock.
@@ -14,15 +21,32 @@ import bgu.spl.mics.MicroService;
 
 public class InventoryService extends MicroService{
 
-	public InventoryService() {
-		super("Change_This_Name");
-		// TODO Implement this
+	private Inventory inventory;
+	private AtomicInteger count;
+	
+	public InventoryService(String name, AtomicInteger count) {
+		super(name);
+		this.inventory=Inventory.getInstance();
+		this.count=count;
 	}
 
 	@Override
 	protected void initialize() {
-		// TODO Implement this
+		subscribeBroadcast(TerminateBroadcast.class, message->{
+			terminate();
+		});
 		
+		subscribeEvent(CheckAvailabiltyEvent.class, message->{
+			int price=inventory.checkAvailabiltyAndGetPrice(message.getBookTitle());
+			complete(message, price);
+		});
+		
+		subscribeEvent(TakeBookEvent.class, message->{
+			OrderResult result=inventory.take(message.getBookTitle());
+			complete(message,result);
+		});
+		
+		this.count.addAndGet(1);
 	}
 
 }
