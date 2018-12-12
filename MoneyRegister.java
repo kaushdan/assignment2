@@ -1,6 +1,9 @@
 package bgu.spl.mics.application.passiveObjects;
-import java.util.List;
-import java.util.Iterator;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.util.LinkedList;
 
 
 /**
@@ -12,54 +15,50 @@ import java.util.Iterator;
  * <p>
  * You can add ONLY private fields and methods to this class as you see fit.
  */
-public class MoneyRegister {
+public class MoneyRegister  {
 	
-	private List<OrderReceipt> orders;
-	private static MoneyRegister instance=null;
+	private LinkedList<OrderReceipt> list;
 	/**
      * Retrieves the single instance of this class.
      */
 	public static MoneyRegister getInstance() {
-		//TODO: Implement this
-		if(instance == null) {
-             instance = new MoneyRegister();
-          }
-          return instance;
+		 return SingletonHolder.instance;
 	}
 	
-	public MoneyRegister(List<OrderReceipt> orders){
-		this.orders=orders;	
+	private static class SingletonHolder {
+       private static MoneyRegister instance = new MoneyRegister();
+   }
+	
+	private MoneyRegister()
+	{
+		this.list=new LinkedList<>();
 	}
+	
 	/**
      * Saves an order receipt in the money register.
      * <p>   
      * @param r		The receipt to save in the money register.
      */
 	public void file (OrderReceipt r) {
-		//TODO: Implement this.
-		orders.add(r);
+		this.list.add(r);
 	}
 	
 	/**
      * Retrieves the current total earnings of the store.  
      */
 	public int getTotalEarnings() {
-		//TODO: Implement this
 		int earnings=0;
-		Iterator myIter=r.iterator();
-		while(myIter.hasNext())
-			earnings+=myIter.next().getPrice();
+		for(OrderReceipt receipt: this.list)
+			earnings+=receipt.getPrice();
 		return earnings;
-		return 0;
 	}
-	
+	 
 	/**
      * Charges the credit card of the customer a certain amount of money.
      * <p>
      * @param amount 	amount to charge
      */
 	public void chargeCreditCard(Customer c, int amount) {
-		// TODO Implement this
 		c.setCreditAmount(c.getAvailableCreditAmount()-amount);
 	}
 	
@@ -69,6 +68,13 @@ public class MoneyRegister {
      * This method is called by the main method in order to generate the output.. 
      */
 	public void printOrderReceipts(String filename) {
-		//TODO: Implement this
+		try
+        {
+              FileOutputStream fos =new FileOutputStream(filename);
+              ObjectOutputStream oos = new ObjectOutputStream(fos);
+              oos.writeObject(this.list);
+              oos.close();
+              fos.close();
+        }catch(IOException ioe){}
 	}
 }
