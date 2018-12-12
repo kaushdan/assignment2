@@ -28,7 +28,7 @@ public abstract class MicroService implements Runnable {
 	 * is terminated
 	 * or not
 	 */
-    private boolean terminated = false;
+    private boolean terminated;
     /**
      * name of
      * micro service
@@ -55,6 +55,7 @@ public abstract class MicroService implements Runnable {
      */
     public MicroService(String name) {
         this.name = name;
+        this.terminated=false;
         this.MapMessagesToCallbacks=new HashMap<>();
     }
 
