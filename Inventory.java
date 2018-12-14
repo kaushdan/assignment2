@@ -86,9 +86,9 @@ public class Inventory {
 				synchronized (myBook) {
 					if(myBook.getAmountInInventory()>0)
 						return myBook.getPrice();
-				} 
+				}
 		}
-		return -1;
+		return -1; 
 	}
 	
 	/**
