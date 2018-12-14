@@ -44,9 +44,11 @@ public class DeliveryVehicle {
      * @param distance	The distance from the store to the customer.
      */
 	public void deliver(String address, int distance) {
-		long time=2*distance*speed;
+//		System.out.println("started delivery "+toString()+" in DeliveryVehicle Class");
+		long time=distance*speed;
 		try {
 			TimeUnit.MILLISECONDS.sleep(time);
 		} catch (InterruptedException e) {}
+//		System.out.println("finished delivery "+toString()+" in DeliveryVehicle Class");
 	}
 }
