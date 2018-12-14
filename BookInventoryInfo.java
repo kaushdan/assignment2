@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.passiveObjects;
 
+import java.io.Serializable;
 
 /**
  * Passive data-object representing a information about a certain book in the inventory.
@@ -7,7 +8,7 @@ package bgu.spl.mics.application.passiveObjects;
  * <p>
  * You may add fields and methods to this class as you see fit (including public methods).
  */
-public class BookInventoryInfo {
+public class BookInventoryInfo implements Serializable {
 
 	private String bookTitle;
 	private int amount;
