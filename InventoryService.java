@@ -33,15 +33,18 @@ public class InventoryService extends MicroService{
 	@Override
 	protected void initialize() {
 		subscribeBroadcast(TerminateBroadcast.class, message->{
+//			System.out.println("received terminate broadcast "+getName());
 			terminate();
 		});
 		
 		subscribeEvent(CheckAvailabiltyEvent.class, message->{
+//			System.out.println("Checking Availibility "+getName());
 			int price=inventory.checkAvailabiltyAndGetPrice(message.getBookTitle());
 			complete(message, price);
 		});
 		
 		subscribeEvent(TakeBookEvent.class, message->{
+//			System.out.println("Taking "+getName());
 			OrderResult result=inventory.take(message.getBookTitle());
 			complete(message,result);
 		});
