@@ -22,34 +22,26 @@ public class TimeService extends MicroService{
 	private int duration;
 	private int speed;
 	private int currentTime;
-	private AtomicInteger count;
-	private int startCount;
 	
-	public TimeService(String name,int speed,int duration, AtomicInteger count, int startCount) {
+	public TimeService(String name,int speed,int duration) {
 		super(name);
 		this.duration=duration;
 		this.speed=speed;
 		this.currentTime=1;
-		this.count=count;
-		this.startCount=startCount;
 	}
 
 	@Override
 	protected void initialize() {
-		while(count.get()<startCount) {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {}
-		}
 		
 		while(this.currentTime-1!=this.duration ) {
+//			System.out.println("Tick: "+this.currentTime);
 			sendBroadcast(new TickBroadcast(this.currentTime));
 			this.currentTime++;
 			try {
 				TimeUnit.MILLISECONDS.sleep(speed);
 			} catch (InterruptedException e) {}
 		}
-		sendBroadcast(new TerminateBroadcast());
+		sendBroadcast(new TerminateBroadcast()); 
 		terminate();
 	}
 
