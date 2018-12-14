@@ -4,6 +4,8 @@ package bgu.spl.mics;
 
 import java.util.HashMap;
 
+import javax.swing.SortingFocusTraversalPolicy;
+
 /**
  * The MicroService is an abstract class that any micro-service in the system
  * must extend. The abstract MicroService class is responsible to get and
@@ -42,7 +44,9 @@ public abstract class MicroService implements Runnable {
      * saves the callback
      * for the specific Event/Broadcast
      */
-    private HashMap<Class<? extends Message>,Callback<Message>> MapMessagesToCallbacks;
+    private HashMap<Class<? extends Message>,Callback<?>> mapMessagesToCallbacks;
+    
+    private MessageBus bus;
     /**
      * if the micro-sevice 
 	 * is registered
@@ -56,7 +60,8 @@ public abstract class MicroService implements Runnable {
     public MicroService(String name) {
         this.name = name;
         this.terminated=false;
-        this.MapMessagesToCallbacks=new HashMap<>();
+        this.mapMessagesToCallbacks=new HashMap<>();
+        this.bus=MessageBusImpl.getInstance();
     }
 
     /**
@@ -80,10 +85,9 @@ public abstract class MicroService implements Runnable {
      *                 {@code type} are taken from this micro-service message
      *                 queue.
      */
-    @SuppressWarnings("unchecked")
 	protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        MessageBusImpl.getInstance().subscribeEvent(type,this);
-        this.MapMessagesToCallbacks.put(type, (Callback<Message>) callback);
+        this.mapMessagesToCallbacks.put(type, callback);
+        this.bus.subscribeEvent(type,this);
     }
 
     /**
@@ -106,10 +110,9 @@ public abstract class MicroService implements Runnable {
      *                 {@code type} are taken from this micro-service message
      *                 queue.
      */
-    @SuppressWarnings("unchecked")
 	protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-    	MessageBusImpl.getInstance().subscribeBroadcast(type, this); 
-        this.MapMessagesToCallbacks.put(type, (Callback<Message>) callback);
+		this.mapMessagesToCallbacks.put(type, callback);
+		this.bus.subscribeBroadcast(type, this); 
     }
 
     /**
@@ -125,17 +128,17 @@ public abstract class MicroService implements Runnable {
      * 	       			null in case no micro-service has subscribed to {@code e.getClass()}.
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
-        return MessageBusImpl.getInstance().sendEvent(e); 
+        return this.bus.sendEvent(e);  
     }
 
     /**
      * A Micro-Service calls this method in order to send the broadcast message {@code b} using the message-bus
      * to all the services subscribed to it.
      * <p>
-     * @param b The broadcast message to send
+     * @param b The broadcast message to send <Message>
      */
     protected final void sendBroadcast(Broadcast b) {
-        MessageBusImpl.getInstance().sendBroadcast(b);
+        this.bus.sendBroadcast(b);
     }
 
     /**
@@ -149,7 +152,7 @@ public abstract class MicroService implements Runnable {
      *               {@code e}.
      */
     protected final <T> void complete(Event<T> e, T result) {
-        MessageBusImpl.getInstance().complete(e, result); 
+        this.bus.complete(e, result); 
     }
 
     /**
@@ -162,6 +165,7 @@ public abstract class MicroService implements Runnable {
      * message.
      */
     protected final void terminate() {
+//    	System.out.println("terminating gracfully "+getName());
         this.terminated = true;
     }
 
@@ -170,7 +174,7 @@ public abstract class MicroService implements Runnable {
      *         construction time and is used mainly for debugging purposes.
      */
     public final String getName() {
-        return name;
+        return this.name;
     }
 
     /**
@@ -179,16 +183,20 @@ public abstract class MicroService implements Runnable {
      */
     @Override
     public final void run() {
-    	MessageBusImpl.getInstance().register(this);
+    	this.bus.register(this);
         initialize();
         while (!terminated) {
         	try {
-        			Message message=MessageBusImpl.getInstance().awaitMessage(this);
-        			this.MapMessagesToCallbacks.get(message.getClass()).call(message);
+//        		System.out.println("waiting for message "+getName());
+        			Message message=this.bus.awaitMessage(this);
+        			if(message!=null) {
+        				Callback c= this.mapMessagesToCallbacks.get(message.getClass());
+        				c.call(message);
+        			}
         		}
         	catch(InterruptedException e) {}
         	}
-        MessageBusImpl.getInstance().unregister(this);
+        this.bus.unregister(this); 
     }
 }
 
