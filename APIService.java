@@ -4,12 +4,15 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import bgu.spl.mics.Future;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.BookOrderEvent;
+import bgu.spl.mics.application.messages.DeliveryEvent;
 import bgu.spl.mics.application.messages.TerminateBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.passiveObjects.Customer;
 import bgu.spl.mics.application.passiveObjects.Order;
+import bgu.spl.mics.application.passiveObjects.OrderReceipt;
 
 /**
  * APIService is in charge of the connection between a client and the store.
@@ -46,15 +49,29 @@ public class APIService extends MicroService{
 	@Override
 	protected void initialize() {
 		subscribeBroadcast(TerminateBroadcast.class, message->{
+//			System.out.println("received terminate broadcast "+getName());
 			terminate();
 		});
 		
 		subscribeBroadcast(TickBroadcast.class, message->{
 			int tick=message.getTick();
+			Future<OrderReceipt>[] futures;
 			if(this.ordersByTick.containsKey(tick)) {
 				LinkedList<String> orders=this.ordersByTick.get(tick);
-				for(String bookTitle: orders) {
-					sendEvent(new BookOrderEvent(this.customer,bookTitle,tick));
+				futures=new Future [orders.size()]; 
+				for(int i=0;i<orders.size();i++) {
+//					System.out.println("Sending order "+orders.get(i)+" in "+getName()+" of customer "+ this.customer.getName());
+					futures[i]=(Future<OrderReceipt>)sendEvent(new BookOrderEvent(this.customer,orders.get(i),tick));
+				}
+				for(Future<OrderReceipt> future: futures) {
+					if(future!=null) {
+						OrderReceipt receipt=future.get();
+						if(receipt!=null) {
+//							System.out.println("Buying of "+receipt.getBookTitle()+" succedeed of "+this.customer.getName());
+//							System.out.println("sending delivery in "+getName()+" of "+this.customer.getName());
+							sendEvent(new DeliveryEvent(customer.getDistance(), customer.getAddress()));
+						}
+					}
 				}
 			}
 		});
