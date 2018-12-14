@@ -1,9 +1,9 @@
-
 package bgu.spl.mics.application.passiveObjects;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.LinkedList;
 
 
@@ -16,7 +16,7 @@ import java.util.LinkedList;
  * <p>
  * You can add ONLY private fields and methods to this class as you see fit.
  */
-public class MoneyRegister  {
+public class MoneyRegister implements Serializable  {
 	
 	private LinkedList<OrderReceipt> list;
 	/**
@@ -25,7 +25,7 @@ public class MoneyRegister  {
 	public static MoneyRegister getInstance() {
 		 return SingletonHolder.instance;
 	}
-	
+	 
 	private static class SingletonHolder {
        private static MoneyRegister instance = new MoneyRegister();
    }
@@ -78,4 +78,5 @@ public class MoneyRegister  {
               fos.close();
         }catch(IOException ioe){}
 	}
+	
 }
