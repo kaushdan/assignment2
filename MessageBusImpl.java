@@ -3,6 +3,8 @@ package bgu.spl.mics;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * The {@link MessageBusImpl class is the implementation of the MessageBus interface.
@@ -18,7 +20,7 @@ public class MessageBusImpl implements MessageBus {
 	/**
 	 * saves for a Broadcast the micro-services subscribed to it
 	 */
-	private HashMap<Class<? extends Broadcast>,LinkedList<MicroService>> brodcastToServices;
+	private HashMap<Class<? extends Broadcast>,BlockingQueue<MicroService>> brodcastToServices;
 	/**
 	 * saves for a micro-service an array of size 3
 	 * slot 0: queue of messages for it to do
@@ -34,8 +36,8 @@ public class MessageBusImpl implements MessageBus {
 	private HashMap<Event<?>,Future<?>> eventsFuture;
 	private Object lockE;
 	private Object lockB;
-	//private Object lockR;
-	//private Object lockUR; 
+	private Object lockR;
+	private Object lockUR; 
 	
 	private static class SingletonHolder {
         private static MessageBus instance = new MessageBusImpl();
@@ -52,14 +54,12 @@ public class MessageBusImpl implements MessageBus {
 		this.eventsFuture=new HashMap<>();
 		this.lockB=new Object();
 		this.lockE=new Object();
-		//this.lockR=new Object();
-		//this.lockUR=new Object();
+		this.lockR=new Object();
+		this.lockUR=new Object();
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		
 			if(this.eventsToServices.containsKey(type)) {
 				this.eventsToServices.get(type).add(m);
 				((LinkedList<Class<? extends Event<T>>>)this.microServicesQueues.get(m)[1]).add(type);
@@ -74,7 +74,6 @@ public class MessageBusImpl implements MessageBus {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
 			if(this.brodcastToServices.containsKey(type)) {
@@ -84,14 +83,13 @@ public class MessageBusImpl implements MessageBus {
 			else {
 				synchronized (this.lockB) {
 					if(!this.brodcastToServices.containsKey(type))
-						this.brodcastToServices.put(type, new LinkedList<MicroService>());
+						this.brodcastToServices.put(type, new LinkedBlockingQueue<MicroService>());
 					this.brodcastToServices.get(type).add(m);
 					((LinkedList<Class<? extends Broadcast>>)this.microServicesQueues.get(m)[2]).add(type);
 			}
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	/**
 	 * determines the result of the Future var for e
@@ -107,17 +105,22 @@ public class MessageBusImpl implements MessageBus {
 	 * all micro-services
 	 * subscribed to it
 	 */
-	public synchronized void sendBroadcast(Broadcast b) {
+	public void sendBroadcast(Broadcast b) {
 		Class<? extends Broadcast> type=b.getClass();
-		LinkedList<MicroService> list=this.brodcastToServices.get(type);
-		for(MicroService m: list) {
-			((Queue<Message>)this.microServicesQueues.get(m)[0]).add(b);
+		BlockingQueue<MicroService> list=this.brodcastToServices.get(type);
+		if(list!=null) {
+			for(MicroService m: list) {
+				if(m!=null) {
+					((Queue<Message>)this.microServicesQueues.get(m)[0]).add(b);
+				}
+			}
+			synchronized (this) {
+				notifyAll();
+			}
 		}
-		this.notifyAll();
 	}
 
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	/**
 	 * gives the Event to
@@ -126,42 +129,44 @@ public class MessageBusImpl implements MessageBus {
 	 * returns a Future var for the event
 	 * which will be determinate in the future
 	 */
-	public synchronized <T> Future<T> sendEvent(Event<T> e) {
+	public <T> Future<T> sendEvent(Event<T> e) {
 		Class<? extends Event<T>> type=(Class<? extends Event<T>>) e.getClass();
 		Queue<MicroService> queue=this.eventsToServices.get(type);
 		if(queue==null || queue.peek()==null) 
 			return null;
-		MicroService m=queue.remove();
-		/**
-		 * round robin
-		 */
-		((Queue<Message>)this.microServicesQueues.get(m)[0]).add(e);
 		Future<T> future=new Future<>();
-		this.eventsFuture.put(e, future);
-		queue.add(m);
-		this.notifyAll(); 
-		return future;
+		synchronized (this) {
+			MicroService m=queue.remove(); 
+			/**
+			 * round robin
+			 */
+			((Queue<Message>)this.microServicesQueues.get(m)[0]).add(e);
+			this.eventsFuture.put(e, future);
+			queue.add(m);
+			notifyAll(); 
+			return future;
+		}
 	}
 
-	@Override
+	@Override 
 	public void register(MicroService m) {
-		//synchronized (this.lockR) {
+//		synchronized (this.lockR) {
 			Object[] array=new Object[3];
 			array[0]=new LinkedList<Message>();
 			array[1]=new LinkedList<Class<? extends Event<?>>>();
 			array[2]=new LinkedList<Class<? extends Broadcast>>();
 			this.microServicesQueues.put(m, array);
-		//}
+//			System.out.println(m.getName()+" registered himself");
+//		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	/**
 	 * removes all references
 	 * for the micro-service
 	 */
 	public void unregister(MicroService m) {
-		//synchronized (lockUR) {
+	//	synchronized(this.lockUR) {
 			Object[] array=this.microServicesQueues.get(m);
 			Queue<Message> microServicMessages=(Queue<Message>) array[0];
 			LinkedList<Class<? extends Event<?>>> eventsTypeList=(LinkedList<Class<? extends Event<?>>>)array[1]; 
@@ -178,42 +183,45 @@ public class MessageBusImpl implements MessageBus {
 				removeBroadcast(type,m);
 			}
 			this.microServicesQueues.remove(m);
-		//}
-	}
+//			System.out.println(m.getName()+" unregistered himself");
+	//	}
+	} 
 
 	private void removeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		LinkedList<MicroService> list=this.brodcastToServices.get(type);
+		BlockingQueue<MicroService> list=this.brodcastToServices.get(type);
 		list.remove(m);
 	}
 
 	private void removeEvent(Class<? extends Event<?>> type, MicroService m) {
-		Queue<MicroService> queue=this.eventsToServices.get(type);
-		MicroService head=queue.peek();
-		if(head!=null) {
-			MicroService check=queue.remove();
-			while(!check.equals(m)) {
-				queue.add(check);
-				check=queue.remove();
-			}
-			if(!head.equals(m)) {
-				check=queue.peek();
-				while(!check.equals(head)) {
-					check=queue.remove();
-					queue.add(check);
-					check=queue.peek();
-				}
-			}
-		}
+		//synchronized (lockUR) {
+			Queue<MicroService> queue=this.eventsToServices.get(type);
+			queue.remove(m);
+//			MicroService head=queue.peek();
+//			if(head!=null) {
+//				MicroService check=queue.remove();
+//				while(!check.equals(m)) {
+//					queue.add(check);
+//					check=queue.remove();
+//				}
+//				if(!head.equals(m)) {
+//					check=queue.peek();
+//					while(!check.equals(head)) {
+//						check=queue.remove();
+//						queue.add(check);
+//						check=queue.peek();
+//					}
+//				}
+//			}
+		//}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized Message awaitMessage(MicroService m) throws InterruptedException, IllegalStateException{
-		if(!this.microServicesQueues.containsKey(m))
+		if(this.microServicesQueues.get(m)==null)
 			throw new IllegalStateException();
 		Queue<Message> queue=(Queue<Message>) this.microServicesQueues.get(m)[0];
 		while(queue.isEmpty()) {
-			this.wait();
+			wait();
 		}
 		return queue.remove();
 	}
