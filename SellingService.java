@@ -41,6 +41,7 @@ public class SellingService extends MicroService{
 	@Override
 	protected void initialize() {
 		subscribeBroadcast(TerminateBroadcast.class, message->{
+//			System.out.println("received terminate broadcast "+getName());
 			terminate();
 		});
 		
@@ -49,25 +50,40 @@ public class SellingService extends MicroService{
 		});
 		
 		subscribeEvent(BookOrderEvent.class, message->{
+//			System.out.println("Order at "+getName()+" of "+message.getBookTitle()+" of "+message.getCustomer().getName());
 			message.setProcessTick(this.currentTick);
 			Customer customer=message.getCustomer();
 			Future<Integer> bookFuture=(Future<Integer>)sendEvent(new CheckAvailabiltyEvent(message.getBookTitle()));
-			int price=bookFuture.get();
-			if(price!=-1) {
+			Integer price=bookFuture.get();
+//			System.out.println("price of "+message.getBookTitle()+" :"+price);
+			if(price!=null && price!=-1) {
+//				System.out.println("maybe "+message.getCustomer().getName()+" can buy "+message.getBookTitle());
 				synchronized (customer) { 
 					if(customer.getAvailableCreditAmount()>=price) {
 						Future<OrderResult> resultFuture=(Future<OrderResult>) sendEvent(new TakeBookEvent(message.getBookTitle()));
 						OrderResult result=resultFuture.get();
-						if(result.equals(OrderResult.SUCCESSFULLY_TAKEN)) {
+						if(result!=null && result.equals(OrderResult.SUCCESSFULLY_TAKEN)) { 
 							this.moneyRegister.chargeCreditCard(customer, price);
-							OrderReceipt receipt=new OrderReceipt(message.getOrderTick(), this.getName(), customer.getId(), message.getBookTitle(), price, this.currentTick,
+							OrderReceipt receipt=new OrderReceipt(0, this.getName(), customer.getId(), message.getBookTitle(), price, this.currentTick,
 									message.getOrderTick(), message.getProcessTick());
 							customer.addReceipt(receipt);
 							this.moneyRegister.file(receipt);
-							sendEvent(new DeliveryEvent(customer.getDistance(), customer.getAddress()));
+							complete(message,receipt);
 						} 
+						else {
+//							System.out.println(message.getBookTitle()+" isn't available anymore");
+							complete(message,null);
+						}
+					}
+					else {
+//						System.out.println(customer.getName()+" doesnt have money to buy "+message.getBookTitle());
+						complete(message,null);
 					}
 				}
+			}
+			else {
+//				System.out.println(message.getBookTitle()+" isn't availible anymore or future resolved with null");
+				complete(message,null);
 			}
 		});
 		
