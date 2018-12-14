@@ -1,11 +1,12 @@
 package bgu.spl.mics.application.services;
 
+import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import bgu.spl.mics.Future;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.AcquireVehicleEvent;
-import bgu.spl.mics.application.messages.ReleseVehicleEvent;
+import bgu.spl.mics.application.messages.ReleaseVehicleEvent;
 import bgu.spl.mics.application.messages.TerminateBroadcast;
 import bgu.spl.mics.application.passiveObjects.ResourcesHolder;
 import bgu.spl.mics.application.passiveObjects.DeliveryVehicle;
@@ -33,18 +34,22 @@ public class ResourceService extends MicroService{
 	@Override
 	protected void initialize() {
 		subscribeBroadcast(TerminateBroadcast.class, message->{
+//			System.out.println("received terminate broadcast "+getName());
+			this.garage.releaseVehicle(null);
 			terminate();
-		});
+		}); 
 		
 		subscribeEvent(AcquireVehicleEvent.class, message->{
+//			System.out.println("Aquiring Vehicle "+getName());
 			Future<DeliveryVehicle> future=garage.acquireVehicle();
 			if(future!=null) {
-				DeliveryVehicle vehicle=future.get();
-				complete(message,vehicle);
+//				System.out.println("future of future complete :"+getName());
+				complete(message,future);
 			}
 		});
 		
-		subscribeEvent(ReleseVehicleEvent.class, message->{
+		subscribeEvent(ReleaseVehicleEvent.class, message->{
+//			System.out.println("Relesing Vehicle "+message.getDeliveryVehicle().toString()+" "+getName());
 			garage.releaseVehicle(message.getDeliveryVehicle());
 		});
 		
